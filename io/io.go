@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/golang/snappy"
 
@@ -44,7 +45,10 @@ func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser) (inCount int64, outCount
 	}
 
 	go func() {
-		fmt.Println(inCount, "   ", outCount)
+		for {
+			fmt.Println(inCount, "   ", outCount)
+			time.After(1 * time.Second)
+		}
 	}()
 
 	wait.Add(2)
@@ -104,7 +108,7 @@ type ReadWriteCloser struct {
 	mu     sync.Mutex
 }
 
-// closeFn will be called only once
+// WrapReadWriteCloser closeFn will be called only once
 func WrapReadWriteCloser(r io.Reader, w io.Writer, closeFn func() error) io.ReadWriteCloser {
 	return &ReadWriteCloser{
 		r:       r,
