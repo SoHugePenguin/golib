@@ -15,6 +15,7 @@
 package io
 
 import (
+	"fmt"
 	"io"
 	"sync"
 
@@ -37,6 +38,10 @@ func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser) (inCount int64, outCount
 		defer pool.PutBuf(buf)
 		*count, recordErrs[number] = io.CopyBuffer(to, from, buf)
 	}
+
+	go func() {
+		fmt.Println(inCount, "   ", outCount)
+	}()
 
 	wait.Add(2)
 	go pipe(0, c1, c2, &inCount)
