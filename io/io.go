@@ -25,7 +25,7 @@ import (
 )
 
 // Join two io.ReadWriteCloser and do some operations.
-func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser) (inCount int64, outCount int64, errors []error) {
+func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser, inCount *int64, outCount *int64) (errors []error) {
 	var wait sync.WaitGroup
 	recordErrs := make([]error, 2)
 
@@ -63,8 +63,8 @@ func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser) (inCount int64, outCount
 	}
 
 	wait.Add(2)
-	go pipe(0, c1, c2, &inCount)
-	go pipe(1, c2, c1, &outCount)
+	go pipe(0, c1, c2, inCount)
+	go pipe(1, c2, c1, outCount)
 	wait.Wait()
 
 	for _, e := range recordErrs {
