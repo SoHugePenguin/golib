@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fatedier/golib/clock"
+	"github.com/SoHugePenguin/golib/clock"
 )
 
 type Writer interface {

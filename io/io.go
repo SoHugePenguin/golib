@@ -20,8 +20,8 @@ import (
 
 	"github.com/golang/snappy"
 
-	"github.com/fatedier/golib/crypto"
-	"github.com/fatedier/golib/pool"
+	"github.com/SoHugePenguin/golib/crypto"
+	"github.com/SoHugePenguin/golib/pool"
 )
 
 // Join two io.ReadWriteCloser and do some operations.
