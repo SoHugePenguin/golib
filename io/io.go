@@ -15,12 +15,10 @@
 package io
 
 import (
-	"fmt"
+	"github.com/golang/snappy"
 	"io"
 	"sync"
-	"time"
-
-	"github.com/golang/snappy"
+	"sync/atomic"
 
 	"github.com/SoHugePenguin/golib/crypto"
 	"github.com/SoHugePenguin/golib/pool"
@@ -30,26 +28,39 @@ import (
 func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser) (inCount int64, outCount int64, errors []error) {
 	var wait sync.WaitGroup
 	recordErrs := make([]error, 2)
+
 	pipe := func(number int, to io.ReadWriteCloser, from io.ReadWriteCloser, count *int64) {
 		defer wait.Done()
-		defer func() {
-			_ = to.Close()
-		}()
-		defer func() {
-			_ = from.Close()
-		}()
+		defer to.Close()
+		defer from.Close()
 
 		buf := pool.GetBuf(16 * 1024)
 		defer pool.PutBuf(buf)
-		*count, recordErrs[number] = io.CopyBuffer(to, from, buf)
-	}
 
-	go func() {
 		for {
-			fmt.Println(inCount, "   ", outCount)
-			time.After(1 * time.Second)
+			n, err := from.Read(buf)
+			if n > 0 {
+				nw, ew := to.Write(buf[:n])
+				if nw > 0 {
+					atomic.AddInt64(count, int64(nw))
+				}
+				if ew != nil {
+					recordErrs[number] = ew
+					return
+				}
+				if nw != n {
+					recordErrs[number] = io.ErrShortWrite
+					return
+				}
+			}
+			if err != nil {
+				if err != io.EOF {
+					recordErrs[number] = err
+				}
+				return
+			}
 		}
-	}()
+	}
 
 	wait.Add(2)
 	go pipe(0, c1, c2, &inCount)
