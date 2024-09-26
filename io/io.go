@@ -31,8 +31,12 @@ func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser) (inCount int64, outCount
 	recordErrs := make([]error, 2)
 	pipe := func(number int, to io.ReadWriteCloser, from io.ReadWriteCloser, count *int64) {
 		defer wait.Done()
-		defer to.Close()
-		defer from.Close()
+		defer func() {
+			_ = to.Close()
+		}()
+		defer func() {
+			_ = from.Close()
+		}()
 
 		buf := pool.GetBuf(16 * 1024)
 		defer pool.PutBuf(buf)
@@ -68,7 +72,7 @@ func WithEncryption(rwc io.ReadWriteCloser, key []byte) (io.ReadWriteCloser, err
 
 func WithCompression(rwc io.ReadWriteCloser) io.ReadWriteCloser {
 	sr := snappy.NewReader(rwc)
-	sw := snappy.NewWriter(rwc)
+	sw := snappy.NewBufferedWriter(rwc)
 	return WrapReadWriteCloser(sr, sw, func() error {
 		_ = sw.Close()
 		return rwc.Close()
