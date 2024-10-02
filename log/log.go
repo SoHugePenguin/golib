@@ -128,7 +128,7 @@ func (l *Logger) log(level Level, offset int, msg string, args ...interface{}) {
 		bytesBufferPool.Put(buffer)
 	}()
 
-	timeHeaderBuf := make([]byte, 23)
+	timeHeaderBuf := make([]byte, 19)
 	_, _ = formatTimeHeader(when, timeHeaderBuf)
 
 	buffer.Write(timeHeaderBuf)

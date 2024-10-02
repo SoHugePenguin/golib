@@ -25,7 +25,7 @@ const (
 const logTimeFormat = "2006-01-02 15:04:05.000"
 
 func formatTimeHeader(when time.Time, buf []byte) (int, int) {
-	if len(buf) < 23 {
+	if len(buf) < 17 {
 		return 0, 0
 	}
 
@@ -36,27 +36,26 @@ func formatTimeHeader(when time.Time, buf []byte) (int, int) {
 	// 修改为 24/10/02 15:04:05
 	//buf[0] = y1[y/1000%10]
 	//buf[1] = y2[y/100]
-	buf[2] = y3[y-y/100*100]
-	buf[3] = y4[y-y/100*100]
-	buf[4] = '-'
-	buf[5] = mo1[mo-1]
-	buf[6] = mo2[mo-1]
-	buf[7] = '-'
-	buf[8] = d1[d-1]
-	buf[9] = d2[d-1]
-	buf[10] = ' '
-	buf[11] = h1[h]
-	buf[12] = h2[h]
-	buf[13] = ':'
-	buf[14] = mi1[mi]
-	buf[15] = mi2[mi]
-	buf[16] = ':'
-	buf[17] = s1[s]
-	buf[18] = s2[s]
+	buf[0] = y3[y-y/100*100]
+	buf[1] = y4[y-y/100*100]
+	buf[2] = '-'
+	buf[3] = mo1[mo-1]
+	buf[4] = mo2[mo-1]
+	buf[5] = '-'
+	buf[6] = d1[d-1]
+	buf[7] = d2[d-1]
+	buf[8] = ' '
+	buf[9] = h1[h]
+	buf[10] = h2[h]
+	buf[11] = ':'
+	buf[12] = mi1[mi]
+	buf[13] = mi2[mi]
+	buf[14] = ':'
+	buf[15] = s1[s]
+	buf[16] = s2[s]
 	//buf[19] = '.'
 	//buf[20] = ns1[ns/100]
 	//buf[21] = ns1[ns%100/10]
 	//buf[22] = ns1[ns%10]
-
 	return d, h
 }
