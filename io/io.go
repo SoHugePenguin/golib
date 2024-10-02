@@ -15,6 +15,7 @@
 package io
 
 import (
+	"context"
 	"github.com/golang/snappy"
 	"io"
 	"sync"
@@ -42,10 +43,19 @@ func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser, inCount *int64, outCount
 		// 限速实现
 		var maxCount int64
 
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		ticker := time.NewTicker(1 * time.Second) // 秒为单位
+		defer ticker.Stop()
 		go func() {
 			for {
-				maxCount = speedLimit
-				<-time.After(1000) // 秒为单位
+				select {
+				case <-ctx.Done():
+					return
+				case <-ticker.C:
+					maxCount = speedLimit
+				}
 			}
 		}()
 
@@ -95,7 +105,7 @@ func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser, inCount *int64, outCount
 			errors = append(errors, e)
 		}
 	}
-	return
+	return errors
 }
 
 func WithEncryption(rwc io.ReadWriteCloser, key []byte) (io.ReadWriteCloser, error) {
