@@ -15,15 +15,13 @@
 package io
 
 import (
-	"context"
+	"github.com/SoHugePenguin/golib/crypto"
+	"github.com/SoHugePenguin/golib/pool"
 	"github.com/golang/snappy"
 	"io"
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/SoHugePenguin/golib/crypto"
-	"github.com/SoHugePenguin/golib/pool"
 )
 
 // Join two io.ReadWriteCloser and do some operations.
@@ -43,31 +41,30 @@ func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser, inCount *int64, outCount
 		// 限速实现
 		var maxCount int64
 
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		//ctx, cancel := context.WithCancel(context.Background())
+		//defer cancel()
 
-		ticker := time.NewTicker(1 * time.Second) // 秒为单位
-		defer ticker.Stop()
-		go func() {
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case <-ticker.C:
-					maxCount = speedLimit
-				}
-			}
-		}()
+		//ticker := time.NewTicker(1 * time.Second) // 秒为单位
+		//defer ticker.Stop()
+		//go func() {
+		//	for {
+		//		select {
+		//		case <-ctx.Done():
+		//			return
+		//		case <-ticker.C:
+		//			maxCount = speedLimit
+		//		}
+		//	}
+		//}()
 
 		const bufSize = 16384
 		buf := pool.GetBuf(bufSize) // 16 KB / per run
 		defer pool.PutBuf(buf)
 
 		for {
-			for {
-				if maxCount > 0 {
-					break
-				}
+			if maxCount <= 0 {
+				maxCount = speedLimit
+				<-time.After(1000)
 			}
 			maxCount -= bufSize
 			n, err := from.Read(buf)
