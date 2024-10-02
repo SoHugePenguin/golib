@@ -64,7 +64,7 @@ func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser, inCount *int64, outCount
 		for {
 			if maxCount <= 0 {
 				maxCount = speedLimit
-				<-time.After(1000)
+				<-time.After(time.Second)
 			}
 			maxCount -= bufSize
 			n, err := from.Read(buf)
