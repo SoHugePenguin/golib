@@ -19,25 +19,47 @@ import (
 	"io"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/SoHugePenguin/golib/crypto"
 	"github.com/SoHugePenguin/golib/pool"
 )
 
 // Join two io.ReadWriteCloser and do some operations.
-func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser, inCount *int64, outCount *int64) (errors []error) {
+func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser, inCount *int64, outCount *int64, inLimit int64, outLimit int64) (errors []error) {
 	var wait sync.WaitGroup
 	recordErrs := make([]error, 2)
 
-	pipe := func(number int, to io.ReadWriteCloser, from io.ReadWriteCloser, count *int64) {
+	pipe := func(number int, to io.ReadWriteCloser, from io.ReadWriteCloser, count *int64, speedLimit int64) {
 		defer wait.Done()
-		defer to.Close()
-		defer from.Close()
+		defer func() {
+			_ = to.Close()
+		}()
+		defer func() {
+			_ = from.Close()
+		}()
 
-		buf := pool.GetBuf(16 * 1024)
+		// 限速实现
+		var maxCount int64
+
+		go func() {
+			for {
+				maxCount = speedLimit
+				<-time.After(1000) // 秒为单位
+			}
+		}()
+
+		const bufSize = 16384
+		buf := pool.GetBuf(bufSize) // 16 KB / per run
 		defer pool.PutBuf(buf)
 
 		for {
+			for {
+				if maxCount > 0 {
+					break
+				}
+			}
+			maxCount -= bufSize
 			n, err := from.Read(buf)
 			if n > 0 {
 				nw, ew := to.Write(buf[:n])
@@ -63,8 +85,9 @@ func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser, inCount *int64, outCount
 	}
 
 	wait.Add(2)
-	go pipe(0, c1, c2, inCount)
-	go pipe(1, c2, c1, outCount)
+
+	go pipe(0, c1, c2, inCount, inLimit)
+	go pipe(1, c2, c1, outCount, outLimit)
 	wait.Wait()
 
 	for _, e := range recordErrs {
