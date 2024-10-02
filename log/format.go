@@ -31,11 +31,11 @@ func formatTimeHeader(when time.Time, buf []byte) (int, int) {
 
 	y, mo, d := when.Date()
 	h, mi, s := when.Clock()
-	ns := when.Nanosecond() / 1000000
+	//ns := when.Nanosecond() / 1000000
 	// len("2006/01/02 15:04:05.000") == 23
-
-	buf[0] = y1[y/1000%10]
-	buf[1] = y2[y/100]
+	// 修改为 24/10/02 15:04:05
+	//buf[0] = y1[y/1000%10]
+	//buf[1] = y2[y/100]
 	buf[2] = y3[y-y/100*100]
 	buf[3] = y4[y-y/100*100]
 	buf[4] = '-'
@@ -53,10 +53,10 @@ func formatTimeHeader(when time.Time, buf []byte) (int, int) {
 	buf[16] = ':'
 	buf[17] = s1[s]
 	buf[18] = s2[s]
-	buf[19] = '.'
-	buf[20] = ns1[ns/100]
-	buf[21] = ns1[ns%100/10]
-	buf[22] = ns1[ns%10]
+	//buf[19] = '.'
+	//buf[20] = ns1[ns/100]
+	//buf[21] = ns1[ns%100/10]
+	//buf[22] = ns1[ns%10]
 
 	return d, h
 }
