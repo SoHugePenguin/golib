@@ -21,6 +21,7 @@ import (
 	"io"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 // Join two io.ReadWriteCloser and do some operations.
@@ -43,10 +44,10 @@ func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser, inCount *int64, outCount
 		defer pool.PutBuf(buf)
 
 		for {
-			if totalCanUse != nil && *totalCanUse <= 0 {
-				//<-time.After(time.Second)
-				continue
+			for totalCanUse != nil && *totalCanUse <= 0 {
+				<-time.After(100 * time.Millisecond)
 			}
+
 			if totalCanUse != nil {
 				*totalCanUse -= bufSize
 			}
