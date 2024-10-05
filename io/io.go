@@ -45,11 +45,13 @@ func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser, inCount *int64, outCount
 
 		for {
 			// 最低限速至16KBps，受限于bufSize，如要减速至0，直接禁用proxy即可
-			if *speedLimit <= 0 {
+			if speedLimit != nil && *speedLimit <= 0 {
 				<-time.After(time.Second)
 				continue
 			}
-			*speedLimit -= bufSize
+			if speedLimit != nil {
+				*speedLimit -= bufSize
+			}
 			n, err := from.Read(buf)
 			if n > 0 {
 				nw, ew := to.Write(buf[:n])
