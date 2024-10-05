@@ -47,10 +47,6 @@ func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser, inCount *int64, outCount
 			for totalCanUse != nil && *totalCanUse <= 0 {
 				<-time.After(100 * time.Millisecond)
 			}
-
-			if totalCanUse != nil {
-				*totalCanUse -= bufSize
-			}
 			n, err := from.Read(buf)
 			if n > 0 {
 				nw, ew := to.Write(buf[:n])
@@ -71,6 +67,9 @@ func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser, inCount *int64, outCount
 					recordErrs[number] = err
 				}
 				return
+			} else if totalCanUse != nil {
+				// 数据正常读写后减少对应额度
+				*totalCanUse -= int64(n)
 			}
 		}
 	}
