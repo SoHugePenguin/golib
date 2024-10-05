@@ -25,11 +25,11 @@ import (
 )
 
 // Join two io.ReadWriteCloser and do some operations.
-func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser, inCount *int64, outCount *int64, inLimit int64, outLimit int64) (errors []error) {
+func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser, inCount *int64, outCount *int64, inLimit *int64, outLimit *int64) (errors []error) {
 	var wait sync.WaitGroup
 	recordErrs := make([]error, 2)
 
-	pipe := func(number int, to io.ReadWriteCloser, from io.ReadWriteCloser, count *int64, speedLimit int64) {
+	pipe := func(number int, to io.ReadWriteCloser, from io.ReadWriteCloser, count *int64, speedLimit *int64) {
 		defer wait.Done()
 		defer func() {
 			_ = to.Close()
@@ -39,34 +39,17 @@ func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser, inCount *int64, outCount
 		}()
 
 		// 限速实现
-		var maxCount int64
-
-		//ctx, cancel := context.WithCancel(context.Background())
-		//defer cancel()
-
-		//ticker := time.NewTicker(1 * time.Second) // 秒为单位
-		//defer ticker.Stop()
-		//go func() {
-		//	for {
-		//		select {
-		//		case <-ctx.Done():
-		//			return
-		//		case <-ticker.C:
-		//			maxCount = speedLimit
-		//		}
-		//	}
-		//}()
-
 		const bufSize = 16384
 		buf := pool.GetBuf(bufSize) // 16 KB / per run
 		defer pool.PutBuf(buf)
 
 		for {
-			if maxCount <= 0 {
-				maxCount = speedLimit
+			// 最低限速至16KBps，受限于bufSize，如要减速至0，直接禁用proxy即可
+			if *speedLimit <= 0 {
 				<-time.After(time.Second)
+				continue
 			}
-			maxCount -= bufSize
+			*speedLimit -= bufSize
 			n, err := from.Read(buf)
 			if n > 0 {
 				nw, ew := to.Write(buf[:n])
