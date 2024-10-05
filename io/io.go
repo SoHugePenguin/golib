@@ -21,15 +21,14 @@ import (
 	"io"
 	"sync"
 	"sync/atomic"
-	"time"
 )
 
 // Join two io.ReadWriteCloser and do some operations.
-func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser, inCount *int64, outCount *int64, inLimit *int64, outLimit *int64) (errors []error) {
+func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser, inCount *int64, outCount *int64, inTotalCanUse *int64, outTotalCanUse *int64) (errors []error) {
 	var wait sync.WaitGroup
 	recordErrs := make([]error, 2)
 
-	pipe := func(number int, to io.ReadWriteCloser, from io.ReadWriteCloser, count *int64, speedLimit *int64) {
+	pipe := func(number int, to io.ReadWriteCloser, from io.ReadWriteCloser, count *int64, totalCanUse *int64) {
 		defer wait.Done()
 		defer func() {
 			_ = to.Close()
@@ -44,13 +43,12 @@ func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser, inCount *int64, outCount
 		defer pool.PutBuf(buf)
 
 		for {
-			// 最低限速至16KBps，受限于bufSize，如要减速至0，直接禁用proxy即可
-			if speedLimit != nil && *speedLimit <= 0 {
-				<-time.After(time.Second)
+			if totalCanUse != nil && *totalCanUse <= 0 {
+				//<-time.After(time.Second)
 				continue
 			}
-			if speedLimit != nil {
-				*speedLimit -= bufSize
+			if totalCanUse != nil {
+				*totalCanUse -= bufSize
 			}
 			n, err := from.Read(buf)
 			if n > 0 {
@@ -78,8 +76,8 @@ func Join(c1 io.ReadWriteCloser, c2 io.ReadWriteCloser, inCount *int64, outCount
 
 	wait.Add(2)
 
-	go pipe(0, c1, c2, inCount, inLimit)
-	go pipe(1, c2, c1, outCount, outLimit)
+	go pipe(0, c1, c2, inCount, inTotalCanUse)
+	go pipe(1, c2, c1, outCount, outTotalCanUse)
 	wait.Wait()
 
 	for _, e := range recordErrs {
